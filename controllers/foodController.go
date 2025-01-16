@@ -44,10 +44,10 @@ func GetFoods() gin.HandlerFunc {
 		projectStage := bson.D{
 			{
 				"$project", bson.D{
-				{"_id", 0},
-				{"total_count", 1},
-				{"food_items", bson.D{{"$slice", []interface{}{"$data", startIndex, recordPerPage}}}},
-			}}}
+					{"_id", 0},
+					{"total_count", 1},
+					{"food_items", bson.D{{"$slice", []interface{}{"$data", startIndex, recordPerPage}}}},
+				}}}
 
 		result, err := foodCollection.Aggregate(ctx, mongo.Pipeline{
 			matchStage, groupStage, projectStage})
