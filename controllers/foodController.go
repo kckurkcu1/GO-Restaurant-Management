@@ -23,6 +23,7 @@ var validate = validator.New()
 
 func GetFoods() gin.HandlerFunc {
 	return func(c *gin.Context) {
+
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
 
 		recordPerPage, err := strconv.Atoi(c.Query("recordPerPage"))
@@ -43,12 +44,13 @@ func GetFoods() gin.HandlerFunc {
 		projectStage := bson.D{
 			{
 				"$project", bson.D{
-					{"_id", 0},
-					{"total_count", 1},
-					{"food_items", bson.D{{"$slice", []interface{}{"$data", startIndex, recordPerPage}}}},
-				}}}
+				{"_id", 0},
+				{"total_count", 1},
+				{"food_items", bson.D{{"$slice", []interface{}{"$data", startIndex, recordPerPage}}}},
+			}}}
 
-		result, err := foodCollection.Aggregate(ctx, mongo.Pipeline{matchStage, groupStage, projectStage})
+		result, err := foodCollection.Aggregate(ctx, mongo.Pipeline{
+			matchStage, groupStage, projectStage})
 		defer cancel()
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "error occured while listing food items"})
@@ -67,7 +69,7 @@ func GetFood() gin.HandlerFunc {
 		foodId := c.Param("food_id")
 		var food models.Food
 
-		err := foodCollection.FindOne(ctx, bson.M{"_id": foodId}).Decode(&food)
+		err := foodCollection.FindOne(ctx, bson.M{"food_id": foodId}).Decode(&food)
 		defer cancel()
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "error occured while fetching the food item"})
@@ -92,7 +94,6 @@ func CreateFood() gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": validationErr.Error()})
 			return
 		}
-
 		err := menuCollection.FindOne(ctx, bson.M{"menu_id": food.Menu_id}).Decode(&menu)
 		defer cancel()
 		if err != nil {
@@ -100,7 +101,6 @@ func CreateFood() gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": msg})
 			return
 		}
-
 		food.Created_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
 		food.Updated_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
 		food.ID = primitive.NewObjectID()
@@ -191,6 +191,5 @@ func UpdateFood() gin.HandlerFunc {
 			return
 		}
 		c.JSON(http.StatusOK, result)
-
 	}
 }
